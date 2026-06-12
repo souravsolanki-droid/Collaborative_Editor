@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Login/Register | Collaborative Editor{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-8">
+    <!-- Toggle Title -->
+    <h2 id="formTitle" class="text-2xl font-bold mb-6 text-center">Login</h2>
+
+    <!-- Show error if any -->
+    {% if error %}
+    <p class="text-red-500 text-center mb-4">{{ error }}</p>
+    {% endif %}
+
+    <!-- Login Form -->
+    <form id="loginForm" method="POST" action="{{ url_for('auth.login') }}">
+        <div class="mb-4">
+            <label for="username" class="block text-sm font-bold text-gray-700">Username</label>
+            <input type="text" id="username" name="username" required
+                   class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="mb-6">
+            <label for="password" class="block text-sm font-bold text-gray-700">Password</label>
+            <input type="password" id="password" name="password" required
+                   class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <button type="submit" class="w-full bg-black text-white font-bold py-2 px-6 rounded shadow hover:bg-gray-800">
+            Login
+        </button>
+    </form>
+
+    <!-- Register Form (Hidden by Default) -->
+    <form id="registerForm" method="POST" action="{{ url_for('auth.register') }}" class="hidden">
+        <div class="mb-4">
+            <label for="registerUsername" class="block text-sm font-bold text-gray-700">Username</label>
+            <input type="text" id="registerUsername" name="username" required
+                   class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+        </div>
+        <div class="mb-6">
+            <label for="registerPassword" class="block text-sm font-bold text-gray-700">Password</label>
+            <input type="password" id="registerPassword" name="password" required
+                   class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+        </div>
+        <button type="submit" class="w-full bg-black text-white font-bold py-2 px-6 rounded shadow hover:bg-gray-800">
+            Register
+        </button>
+    </form>
+
+    <!-- Toggle Buttons -->
+    <p class="text-sm text-gray-600 mt-4 text-center">
+        <span id="toggleText">Don't have an account?</span>
+        <button id="toggleForm" class="text-blue-500 hover:underline cursor-pointer">
+            Register Here
+        </button>
+    </p>
+</div>
+
+<script>
+    // Toggle between Login and Register forms
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const toggleForm = document.getElementById('toggleForm');
+    const formTitle = document.getElementById('formTitle');
+    const toggleText = document.getElementById('toggleText');
+
+    toggleForm.addEventListener('click', () => {
+        if (loginForm.classList.contains('hidden')) {
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+            formTitle.textContent = 'Login';
+            toggleText.textContent = "Don't have an account?";
+            toggleForm.textContent = 'Register Here';
+        } else {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+            formTitle.textContent = 'Register';
+            toggleText.textContent = "Already have an account?";
+            toggleForm.textContent = 'Login Here';
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+{
+    "name": "sharedb-example-rich-text-presence",
+    "version": "1.0.0",
+    "description": "An example of presence using ShareDB and Quill",
+    "main": "server.js",
+    "scripts": {
+        "build": "browserify client.js -o static/dist/bundle.js",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node server.js"
+    },
+    "author": "Nate Smith",
+    "contributors": [
+        "Avital Oliver <avital@aoliver.org> (https://aoliver.org/)",
+        "Alec Gibson <alec@reedsy.com>"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "@teamwork/websocket-json-stream": "^2.0.0",
+        "bson-objectid": "^2.0.4",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
+        "express": "^4.18.2",
+        "quill": "^2.0.2",
+        "quill-cursors": "^4.0.3",
+        "reconnecting-websocket": "^4.4.0",
+        "redis": "^4.7.0",
+        "rich-text": "^4.1.0",
+        "sharedb": "^3.3.0",
+        "sharedb-mongo": "^5.0.0",
+        "sharedb-redis-pubsub": "^5.0.1",
+        "tinycolor2": "^1.6.0",
+        "ws": "^8.12.1"
+    },
+    "devDependencies": {
+        "browserify": "^17.0.0"
+    }
+}

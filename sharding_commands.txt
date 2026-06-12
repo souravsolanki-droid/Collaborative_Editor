@@ -1,0 +1,88 @@
+sudo docker exec -it collaborative_editor_mongo-config1.1.aike6v87p47kubt3wf9punnuz mongosh
+
+rs.initiate({
+    _id: "configReplSet",
+    configsvr: true,
+    members: [
+        { _id: 0, host: "mongo-config1:27017" },
+        { _id: 1, host: "mongo-config2:27017" },
+        { _id: 2, host: "mongo-config3:27017" }
+    ]
+});
+
+
+sudo docker exec -it collaborative_editor_mongo-shard1a.1.gzztqcmyh318nns948m4ry1fh mongosh
+
+rs.initiate({
+    _id: "shard1",
+    members: [
+        { _id: 0, host: "mongo-shard1a:27017" },
+        { _id: 1, host: "mongo-shard1b:27017" }
+    ]
+});
+
+
+sudo docker exec -it collaborative_editor_mongo-shard2a.1.w6ixef5j769w8t2w77y4ovufh mongosh
+
+rs.initiate({
+    _id: "shard2",
+    members: [
+        { _id: 0, host: "mongo-shard2a:27017" },
+        { _id: 1, host: "mongo-shard2b:27017" }
+    ]
+});
+
+sudo docker exec -it collaborative_editor_mongo-router.1.prd6w98b4j6rv02sm1xym5818 mongosh
+
+sh.addShard("shard1/mongo-shard1a:27017,mongo-shard1b:27017");
+sh.addShard("shard2/mongo-shard2a:27017,mongo-shard2b:27017");
+sh.enableSharding("document_db");
+sh.shardCollection("document_db.examples", { shardKeyField: 1 });
+
+___________________
+
+sudo docker exec -it $(sudo docker ps --filter "name=collaborative_editor_mongo-config1" --format "{{.ID}}") mongosh \
+--eval '
+rs.initiate({
+    _id: "configReplSet",
+    configsvr: true,
+    members: [
+        { _id: 0, host: "mongo-config1:27017" },
+        { _id: 1, host: "mongo-config2:27017" },
+        { _id: 2, host: "mongo-config3:27017" }
+    ]
+});'
+
+
+sudo docker exec -it $(sudo docker ps --filter "name=collaborative_editor_mongo-shard1a" --format "{{.ID}}") mongosh \
+--eval '
+rs.initiate({
+    _id: "shard1",
+    members: [
+        { _id: 0, host: "mongo-shard1a:27017" },
+        { _id: 1, host: "mongo-shard1b:27017" }
+    ]
+});'
+
+
+sudo docker exec -it $(sudo docker ps --filter "name=collaborative_editor_mongo-shard2a" --format "{{.ID}}") mongosh \
+--eval '
+rs.initiate({
+    _id: "shard2",
+    members: [
+        { _id: 0, host: "mongo-shard2a:27017" },
+        { _id: 1, host: "mongo-shard2b:27017" }
+    ]
+});'
+
+sudo docker exec -it $(sudo docker ps --filter "name=collaborative_editor_mongo-router" --format "{{.ID}}") mongosh \
+--eval '
+sh.addShard("shard1/mongo-shard1a:27017,mongo-shard1b:27017");
+sh.addShard("shard2/mongo-shard2a:27017,mongo-shard2b:27017");
+sh.enableSharding("document_db");
+sh.shardCollection("document_db.examples", { shardKeyField: 1 });
+'
+
+
+
+

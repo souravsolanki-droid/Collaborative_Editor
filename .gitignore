@@ -1,0 +1,14 @@
+# Local notes and env files
+docker_compose.txt
+env.txt
+commands.txt
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Node
+node_modules/

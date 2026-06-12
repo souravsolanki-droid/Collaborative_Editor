@@ -1,0 +1,245 @@
+version: '3.8'
+
+services:
+  flask_app:
+    image: flask_app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+      - traefik
+    environment:
+      FLASK_APP: app.py
+      FLASK_ENV: production
+      FLASK_BASE_URL: "http://flask_app:5000"
+      EXPRESS_BASE_URL: "http://express_server:8081"
+      EXPRESS_WS_URL: "ws://express_server:8081"
+      SQLALCHEMY_DATABASE_URI: "postgresql://root:root@postgres:5432/root"
+      SECRET_KEY: "your_secret_key"
+    networks:
+      - app_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.flask_app.rule=Host(`flask.localhost`)"
+      - "traefik.http.routers.flask_app.entrypoints=http"
+      - "traefik.http.services.flask_app.loadbalancer.server.port=5000"
+
+  express_server:
+    image: express_server
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongo-router
+      - redis
+      - traefik
+    environment:
+      EXPRESS_BASE_URL: "http://express_server:8081"
+      EXPRESS_WS_URL: "ws://express_server:8081"
+      MONGO_URL: "mongodb://mongo-router:27017/document_db"
+      REDIS_HOST: "redis"
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: "root"
+    networks:
+      - app_network
+    volumes:
+      - ./express_server:/app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.express_server.rule=Host(`api.express.localhost`)"
+      - "traefik.http.routers.express_server.entrypoints=http"
+      - "traefik.http.services.express_server.loadbalancer.server.port=8081"
+  
+  pad_cleaner:
+    image: pad_cleaner
+    depends_on:
+      - redis_pad
+      - postgres
+      - mongo-router
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql://root:root@postgres:5432/root
+      - REDIS_URL=redis://:root@redis_pad:6379/0
+    networks:
+      - app_network
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: root
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  # Mongo Config Servers
+  mongo-config1:
+    image: mongo:5
+    command: mongod --configsvr --replSet configReplSet --bind_ip_all --port 27017 --noauth
+    ports:
+      - "27019:27017"
+    networks:
+      - app_network
+
+  mongo-config2:
+    image: mongo:5
+    command: mongod --configsvr --replSet configReplSet --bind_ip_all --port 27017 --noauth
+    ports:
+      - "27020:27017"
+    networks:
+      - app_network
+
+  mongo-config3:
+    image: mongo:5
+    command: mongod --configsvr --replSet configReplSet --bind_ip_all --port 27017 --noauth
+    ports:
+      - "27021:27017"
+    networks:
+      - app_network
+
+  # Mongo Shard Replica Sets
+  mongo-shard1a:
+    image: mongo:5
+    command: mongod --shardsvr --replSet shard1 --bind_ip_all --port 27017 --noauth
+    ports:
+      - "27022:27017"
+    networks:
+      - app_network
+
+  mongo-shard1b:
+    image: mongo:5
+    command: mongod --shardsvr --replSet shard1 --bind_ip_all --port 27017 --noauth
+    ports:
+      - "27023:27017"
+    networks:
+      - app_network
+
+  mongo-shard2a:
+    image: mongo:5
+    command: mongod --shardsvr --replSet shard2 --bind_ip_all --port 27017 --noauth
+    ports:
+      - "27024:27017"
+    networks:
+      - app_network
+
+  mongo-shard2b:
+    image: mongo:5
+    command: mongod --shardsvr --replSet shard2 --bind_ip_all --port 27017 --noauth
+    ports:
+      - "27025:27017"
+    networks:
+      - app_network
+
+  # Mongo Router
+  mongo-router:
+    image: mongo:5
+    command: mongos --configdb configReplSet/mongo-config1:27017,mongo-config2:27017,mongo-config3:27017 --bind_ip_all --port 27017 --noauth
+    ports:
+      - "27018:27017"
+    networks:
+      - app_network
+    depends_on:
+      - mongo-config1
+      - mongo-config2
+      - mongo-config3
+      - mongo-shard1a
+      - mongo-shard1b
+      - mongo-shard2a
+      - mongo-shard2b
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:6
+    command: ["redis-server", "--requirepass", "root"]
+    environment:
+      REDIS_PASSWORD: "root"
+    ports:
+      - "6379:6379"
+    networks:
+      - app_network
+  
+  redis_pad:
+    image: redis:6
+    command: ["redis-server", "--requirepass", "root"]
+    environment:
+      REDIS_PASSWORD: "root"
+    ports:
+      - "6380:6380"
+    networks:
+      - app_network
+
+  traefik:
+    image: traefik:v2.9
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.http.address=:80"
+      - "--entrypoints.ws.address=:8081"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addrouterslabels=true"
+      - "--metrics.prometheus.addserviceslabels=true"
+      - "--log.level=DEBUG"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - app_network
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      replicas: 1
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    networks:
+      - app_network
+    deploy:
+      mode: global
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - app_network
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+networks:
+  app_network:
+    driver: overlay  # Ensure this is using the overlay driver
+
+volumes:
+  postgres_data:
+  mongo_data:
+  grafana_data:
+  config_data1:
+  config_data2:
+  config_data3:
+  shard1a_data:
+  shard1b_data:
+  shard2a_data:
+  shard2b_data:

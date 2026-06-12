@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Pad</title>
+    <link href="https://cdn.jsdelivr.net/npm/quill/dist/quill.snow.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 90%; /* Use 90% of the viewport width */
+            width: 100%; /* Ensure it spans the full width for smaller screens */
+            margin: 20px auto;
+            background-color: white;
+            overflow: hidden;
+            background-color: transparent;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .ql-toolbar {
+            border-bottom: 1px solid #e5e7eb;
+            background-color: transparent;
+        }
+
+        .ql-container {
+            height: calc(100vh - 100px); /* Full height minus padding and toolbar */
+            font-family: 'Inter', sans-serif;
+            background-color: transparent;
+        }
+
+        footer {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 14px;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Full-Screen Editor -->
+    <div id="editor-container">
+        <div id="editor" class="ql-container ql-snow"></div>
+    </div>
+
+    <!-- Include Quill and Client Script -->
+    <script>
+        window.padId = "{{ pad_id }}";
+        window.username = "{{ username }}";
+        window.expressWsUrl = "{{ express_ws_url }}";  <!-- Inject WebSocket URL -->
+        console.log("Pad ID:", window.padId);
+        console.log("Username:", window.username);
+        console.log("WebSocket URL:", window.expressWsUrl);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/quill/dist/quill.min.js"></script>
+    <script src="/static/dist/bundle.js"></script> <!-- Sharedb Client -->
+</body>
+</html>
